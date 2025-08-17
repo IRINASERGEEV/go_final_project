@@ -1,0 +1,82 @@
+// pkg/repeat/repeat.go
+package repeat
+
+import (
+    "errors"
+    "strconv"
+    "strings"
+    "time"
+)
+
+// afterNow возвращает true, если date > now (сравнение только по дате)
+func afterNow(date, now time.Time) bool {
+    dateOnly := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+    nowOnly := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+    return dateOnly.After(nowOnly) || dateOnly.Equal(nowOnly)
+}
+
+// NextDate возвращает следующую дату выполнения задачи
+// now — текущее время
+// dstart — начальная дата в формате "20060102"
+// repeat — правило повторения: "", "d N", "y", или неподдерживаемое
+func NextDate(now time.Time, dstart string, repeat string) (string, error) {
+    // Пустое правило — задача не повторяется
+    if repeat == "" {
+        return "", nil
+    }
+
+    // Парсим начальную дату
+    date, err := time.Parse("20060102", dstart)
+    if err != nil {
+        return "", errors.New("invalid date format, expected YYYYMMDD")
+    }
+
+    // Разбиваем правило на части
+    parts := strings.Split(strings.TrimSpace(repeat), " ")
+    if len(parts) == 0 {
+        return "", errors.New("empty repeat rule")
+    }
+
+    switch parts[0] {
+    case "y":
+        // Ежегодно: добавляем по году, пока дата > now
+        for {
+            date = date.AddDate(1, 0, 0)
+            if afterNow(date, now) {
+                break
+            }
+        }
+        return date.Format("20060102"), nil
+
+    case "d":
+        // Повтор через N дней
+        if len(parts) != 2 {
+            return "", errors.New("invalid daily repeat format: use 'd <days>'")
+        }
+
+        interval, err := strconv.Atoi(parts[1])
+        if err != nil {
+            return "", errors.New("invalid number of days")
+        }
+
+        if interval <= 0 {
+            return "", errors.New("days must be positive")
+        }
+        if interval > 400 {
+            return "", errors.New("days must not exceed 400")
+        }
+
+        // Увеличиваем дату на interval дней, пока не станет больше now
+        for {
+            date = date.AddDate(0, 0, interval)
+            if afterNow(date, now) {
+                break
+            }
+        }
+        return date.Format("20060102"), nil
+
+    default:
+        // Неподдерживаемое правило (например, w ..., m ...)
+        return "", errors.New("unsupported repeat rule")
+    }
+}

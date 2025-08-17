@@ -11,20 +11,20 @@ import (
 // signInHandler — POST /api/signin
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSON(w, map[string]string{"error": "method not allowed"}, http.StatusMethodNotAllowed)
 		return
 	}
 
 	// Читаем JSON
 	var body map[string]string
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, map[string]string{"error": "invalid JSON"})
+		writeJSON(w, map[string]string{"error": "invalid JSON"}, http.StatusBadRequest)
 		return
 	}
 
 	password := body["password"]
 	if password == "" {
-		writeJSON(w, map[string]string{"error": "password is required"})
+		writeJSON(w, map[string]string{"error": "password is required"}, http.StatusBadRequest)
 		return
 	}
 
@@ -32,13 +32,13 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	expected := os.Getenv("TODO_PASSWORD")
 	if expected == "" {
 		// Если пароль не задан — аутентификация не нужна
-		writeJSON(w, map[string]string{"error": "authentication not required"})
+		writeJSON(w, map[string]string{"error": "authentication not required"}, http.StatusOK)
 		return
 	}
 
 	// Проверяем пароль
 	if password != expected {
-		writeJSON(w, map[string]string{"error": "wrong password"})
+		writeJSON(w, map[string]string{"error": "wrong password"}, http.StatusUnauthorized)
 		return
 	}
 
@@ -56,7 +56,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   false, // в учебном проекте можно false
 	})
 
-	writeJSON(w, map[string]string{"token": token})
+	writeJSON(w, map[string]string{"token": token}, http.StatusOK)
 }
 
 // auth — middleware для проверки аутентификации

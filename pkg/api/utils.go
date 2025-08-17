@@ -7,8 +7,9 @@ import (
 )
 
 // writeJSON — универсальный JSON-ответ
-func writeJSON(w http.ResponseWriter, data any) {
+func writeJSON(w http.ResponseWriter, data any, status int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
 

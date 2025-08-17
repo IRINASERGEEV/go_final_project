@@ -45,10 +45,9 @@ func main() {
 	// Логируем путь к веб-файлам
 	absPath, err := filepath.Abs(webDir)
 	if err != nil {
-		log.Printf("Could not resolve absolute path: %v", err)
-	} else {
-		log.Printf("Serving files from: %s", absPath)
+		log.Fatalf("Failed to resolve absolute path for web directory: %v", err)
 	}
+	log.Printf("Serving files from: %s", absPath)
 
 	// Определяем порт: сначала из переменной окружения, потом defaultPort
 	port := os.Getenv("TODO_PORT")
